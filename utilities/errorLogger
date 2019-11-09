@@ -1,0 +1,15 @@
+const fs = require("fs");
+let errorLogger = (err,req,res,next) => {
+    let message = err.stack + "\n";
+    fs.appendFile('./errorLogger.txt',message,(err)=>{
+    if(err){
+        console.log("Error logging failed");
+    }
+})
+    if(!err.status){
+        err.status=500;
+    }
+    res.json({"message":err.message})
+    next();
+}
+module.exports=errorLogger;

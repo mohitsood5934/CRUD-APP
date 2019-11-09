@@ -1,0 +1,15 @@
+const  fs = require('fs');
+let requestLogger = (req,res,next) =>{
+    let message = "Request from " +req.method+ " " +req.path;
+    fs.appendFile("./requestLogger.txt",message,(err)=>{
+      if(err){
+            console.log("Logging Failed!");
+        }
+        else{
+            next();
+        }
+    })
+    
+
+}
+module.exports = requestLogger;

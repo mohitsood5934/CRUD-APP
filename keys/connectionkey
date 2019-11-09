@@ -1,0 +1,4 @@
+module.exports = {
+
+    connectionURI : "mongodb://localhost:27017/login"
+}

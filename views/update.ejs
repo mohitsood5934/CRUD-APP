@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CRUD APP</title>
+        
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    </head>
+    <body>
+        <% include partials/nav.ejs %>
+        <h1 align="center">Update User</h1>
+        <div class="container">
+        <form  name="update" method="post" action="update">
+                <div class="form-group">
+                        <label for="_id">Enter the Id</label>
+                        <input type="text" class="form-control" id="_id" name="_id">
+                      </div>
+
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="username" class="form-control" id="username" name="username">
+            </div>
+           <div class="form-group">
+                <label for="city">City:</label>
+                <input type="text" class="form-control" id="city" name="city">
+            </div>
+            <div class="form-group">
+                    <label for="MobileNumber">MobileNumber:</label>
+                    <input type="text" class="form-control" id="mob" name="mobilenumber">
+                </div>
+            <button type="submit" class="btn btn-primary" name="register">Update</button>
+</form>
+</div>
+       
+    </body>
+</html>

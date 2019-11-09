@@ -1,0 +1,119 @@
+const User = require("../models/usermodel");
+const bcrypt = require("bcrypt-nodejs");
+
+exports.addData = function(req,res){
+
+    var username = req.body.username;
+    var password=req.body.password;
+    var city=req.body.city;
+    var mobilenumber=req.body.mobilenumber;
+
+    //schema.create method is used to insert data in to the database
+    User.create({
+        username:username,
+        password:bcrypt.hashSync(password,bcrypt.genSaltSync(10)),
+        city:city,
+        mobilenumber:mobilenumber
+
+    },
+    function(err,user){
+        if(err){
+            console.log(err);
+            res.redirect('/failure');
+        }
+        else{
+            console.log("User created",user);
+            res.redirect('/success');
+        }
+    }
+)
+}
+//alternate syntax
+/*exports.addData = function(req,res){
+    var data = new User(req.body);
+    data.save()
+    .then(() =>
+     res.redirect('/success'))
+    .catch((err) => res.redirect('/failure'));
+}
+*/
+exports.login = function(req,res){
+
+    console.log("Trying to login the user!!");
+    var username = req.body.username;
+    var password = req.body.password;
+    User.findOne({
+        username : username
+    }).exec(function(err,user){
+        if(err){
+            console.log(err);
+        }
+        else{
+                  if(bcrypt.compareSync(password,user.password)){
+                               
+                                console.log(user);
+                                var a = user;
+                                console.log(a);
+                                res.redirect('/dashboard');
+                     }
+                else{
+                            console.log("Bad username or password!!")
+                            res.redirect('/failure');
+
+    
+                    }
+                }
+                
+    });
+}
+exports.viewUser = function(req,res){
+    
+    User.find({
+
+    }).exec(function(err,user){
+        if(err){
+            console.log(err);
+
+        }
+        else{
+            var a = user.length;
+            var  names=[];
+            for(var i=0;i<a;i++){
+                names[i]=user[i]
+            }
+            res.render("viewAllUser",{names:names,a:a});
+           
+            
+        }
+    }) 
+}      
+exports.deleteUser = function(req,res){
+    var id=req.body._id;
+        User.findOneAndDelete({
+            _id:id
+
+        }).exec(function(err,user){
+            if(err){
+                console.log(err);
+            }
+            else{
+                console.log("User deleted successfully");
+                res.redirect("/displaydelete");
+            }
+        })
+}
+
+exports.update = function(req,res){
+    var id = req.body._id;
+    User.findByIdAndUpdate({_id:id},{$set:{"username":req.body.username,"city":req.body.city,"mobilenumber":req.body.mobilenumber}})
+    .exec(function(err,user){
+        if(err){
+            console.log(err);
+        }
+        else{
+            console.log("Woo,User Updated!!");
+            res.redirect("displayupdate");
+
+        }
+    })
+}

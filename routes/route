@@ -1,0 +1,88 @@
+const express = require("express");
+const path = require("path");
+const bcrypt = require("bcrypt-nodejs");
+const router = express.Router();
+const userController = require("../controllers/userController");
+const User = require('../models/usermodel');
+
+//router level middleware
+let routeLogger = (req,res,next) =>{
+          console.log(req.method);
+          console.log(req.path);
+          console.log('Time:', new Date());
+          next();
+ }
+router.use(routeLogger);
+
+//get requests
+router.get('/',function(req,res){
+    res.render('register')
+})
+
+/*router.get('/login',function(req,res,next){
+    //some logic here
+    next();
+})
+*/
+router.get('/login',function(req,res){
+    res.render('login');
+})
+router.get('/register',function(req,res){
+    res.render('register');
+
+})
+router.get('/update',function(req,res){
+    res.render('update');
+})
+
+router.get('/delete',function(req,res){
+    res.render('delete');
+})
+router.get('/viewUser',function(req,res){
+
+    res.render('viewUser');
+})
+/*regex based route
+router.get(/any regex pattern/,(req,res){
+    //response
+})
+*/
+router.get('/success',function(req,res){
+    
+    res.render("success");
+})
+router.get('/failure',function(req,res){
+
+    res.render("failure");
+})
+router.get("/displaydelete",function(req,res){
+    res.render("displaydelete");
+})
+router.get('/displayupdate',function(req,res){
+
+   res.render("displayupdate");
+    
+})
+router.get("/dashboard",function(req,res){
+    res.render("dashboard");
+})
+router.get('/forgotPassword',function(req,res){
+
+    res.render("forgotPassword");
+})
+router.get('*',function(req,res){
+
+    res.render("pageNotFound")
+})
+
+//post requests
+router.post('/addData',userController.addData);
+router.post('/login',userController.login);
+
+router.post("/viewUser",userController.viewUser);
+
+router.post("/deleteUser",userController.deleteUser);
+router.post('/update',userController.update);
+
+//exporting the router functionality
+module.exports=router;
