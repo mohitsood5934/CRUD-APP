@@ -1,5 +1,4 @@
->>>>>>>>server side<<<<<<
-1.app.js
+1...app.js
 var express = require('express');
 var fs = require("fs");
 var path = require("path");
@@ -7,6 +6,7 @@ var morgan = require("morgan");
 var cors = require("cors");
 var bodyParser = require("body-parser");
 var routes = require("./routes/route")
+//const userFiles = '../serverSide/userUploads/'
 var app = express();
 //middlewares used 
 app.use(cors());
@@ -20,27 +20,39 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   next();
 });
-//using route
-app.use("/", routes)
+//for downloading the file
+app.use("/download", routes)
+app.use('/download', express.static(path.join(__dirname, 'userUploads')))
+//for uploading the files 
+app.use("/upload",routes)
 app.listen(3000, function (req, res) {
   console.log("You are listening to port 3000")
 });
 
-2.routes/generateRTFFile.js
+
+2...route.js
+const express = require("express");
+const router = express.Router();
+const generateRTF = require("./generateRTFFile");
+const fs=require("fs")
+// const userFiles = '../serverSide/userUploads/'
+router.get("/download/:fileName", function (req, res) {
+    const fileName = req.params.fileName;
+    generateRTF.downloadFile(fileName,req,res);
+})
+router.put('/', (req, res) => {
+  console.log("files")
+  const file = req.body;
+  generateRTF.uploadFile(file,req,res);
+ });
+
+module.exports = router
+
+3...generateRTFFile.js
 const fs = require("fs");
 var util = require("util");
-exports.generateFile=(req,res)=>{
-    fs.readFile(__dirname + '/RTF/convert.html','utf8', function(err, data){
-         if(err){
-             console.log(err);
-         }else{
-            report=util.format(data)
-            res.attachment('report.rtf');
-            res.end(report, 'binary')
-         }
-      });
- }
- exports.downloadFile=(fileName,req,res)=>{
+const userFiles = '../serverSide/userUploads/'
+exports.downloadFile=(fileName,req,res)=>{
       fs.readFile(fileName,'utf8', function(err, data){
         if(err){
             console.log(err);
@@ -51,25 +63,26 @@ exports.generateFile=(req,res)=>{
         }
      });
  }
+ exports.uploadFile=(file,req,res)=>{
+    const base64data = file.content.replace(/^data:.*,/, '');
+    fs.writeFile(userFiles + file.name, base64data, 'base64', (err) => {
+      if (err) {
+        console.log(err);
+        res.sendStatus(500);
+      } else {
+        res.set('Location', userFiles + file.name);
+        res.status(200);
+        res.send(file);
+      }
+    });
+ }
 
-3.routes/route.js
-const express = require("express");
-const router = express.Router();
-const generateRTF = require("./generateRTFFile");
-router.get("/rtfFile", function (req, res) {
-    generateRTF.generateFile(req, res)
 
-})
-router.get("/files/:fileName", function (req, res) {
-    const fileName = req.params.fileName;
-    generateRTF.downloadFile(fileName,req,res);
-})
-module.exports = router
-
-4.rtf.service.ts
+4..rtf.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HttpHeaders } from "@angular/common/http";
+import { finalize } from 'rxjs/operators';
 import { BehaviorSubject, Subject, Observable } from 'rxjs';
 let headers = new HttpHeaders({
   "Authorization": "Bearer"
@@ -78,22 +91,25 @@ let headers = new HttpHeaders({
   providedIn: 'root'
 })
 export class RtfService {
-
+  [x: string]: any;
   constructor(private http: HttpClient) { }
-  generateRTFFile() {
-    return this.http
-      .get("http://localhost:3000/rtfFile" , { headers, responseType: "blob" })
-      .toPromise()
+  public upload(fileName: string, fileContent: string) {
+    return this.http.put("http://localhost:3000/upload", {name: fileName, content: fileContent})
+    .toPromise()
+    
   }
+ 
+  
   public download (fileName:string){
-    return this.http.get("http://localhost:3000/files/"+fileName, { responseType: 'blob'})
+    return this.http.get("http://localhost:3000/download/"+fileName, { responseType: 'blob'})
     .toPromise()
   }
  
 
 }
 
-5.app.com.ts
+
+5..app.compo.ts
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '../../node_modules/@angular/forms';
 import { FormControl, FormGroupDirective, NgForm, FormGroup, Validators } from '@angular/forms';
@@ -105,6 +121,7 @@ import { saveAs } from 'file-saver'
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+  fileList:any=[]
   //setting File path
   public filePath;
   url: any;
@@ -120,8 +137,8 @@ export class AppComponent {
       const [file] = event.target.files;
       reader.readAsDataURL(file); // read file as data url
       reader.onload = (event) => { // called once readAsDataURL is completed
-      this.url = reader.result; //add source to file
-      console.log(this.url)
+       this.url = reader.result; //add source to file
+    
       }
     }
   }
@@ -133,33 +150,38 @@ export class AppComponent {
       cardImage: ["", Validators.required]
     })
   }
-  convertFile() {
-    this.rtf.generateRTFFile()
-      .then(
-        blob => {
-          saveAs(blob, "File.rtf");
-          this.success_message = "RTF File generated successfully "
-        })
-      .catch((err) => {
-        this.failure_message = "Unable to generate the file"
-      })
-  }
-  download(){
-    this.rtf.download(this.filePath)
+  download(filename){
+    this.rtf.download(filename)
    .then(
         blob => {
         saveAs(blob, "RTFFile.rtf");
-        this.success_message = "RTF File generated successfully "
+        this.success_message = "RTF File downloaded successfully "
       })
       .catch((err) => {
-        this.failure_message = "Unable to generate the file"
+        this.failure_message = "Unable to download the file"
       })
  
   }
+  remove(filename){
+    this.fileList.pop(filename)
+  }
+  upload(){
+    this.fileList.push(this.filePath);
+    this.rtf.upload(this.filePath, this.url)
+    .then((data)=>{
+      this.success_message="File Uploaded successfully"
+    })
+    .catch((err)=>{
+      this.failure_message = "Unable to upload the file"
+    })
+      
+    
+  }
 
 }
-6.
-app.comp.html<<<<<<<<<
+
+
+6....app.htmlll
 <div class="container">
   <div class="row">
     <div class="col-md-5">
@@ -177,15 +199,58 @@ app.comp.html<<<<<<<<<
           </mat-form-field>
         </form>
         <mat-card-actions>
-          <button type="submit" class="btn btn-primary btn-md" (click)="convertFile()">Convert</button><br><br>
-          <button type="submit" class="btn btn-primary btn-md" (click)="download()">Download File</button>
+          <button type="submit" class="btn btn-primary"  (click)="upload()" >Upload</button>
+         <!-- <button type="submit" class="btn btn-primary btn-md" (click)="download()">Download File</button>-->
           <div *ngIf="success_message">
-            <span style="color:red"><b>{{success_message}}</b></span>
+            <span style="color:green"><b>{{success_message}}</b></span>
           </div>
           <div *ngIf="failure_message">
             <span style="color:red"><b>{{failure_message}}</b></span>
           </div>
+          <h1>Your files</h1>
+<ul>
+ <li *ngFor="let fileName of fileList" >
+   {{fileName}}&nbsp;&nbsp;
+   <button class="btn btn-primary"  (click)="download(fileName)">Download</button>&nbsp;
+ </li>
+</ul>
         </mat-card-actions>
       </mat-card>
     </div>
   </div>
+  
+  7..app.module.ts
+  import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {ReactiveFormsModule} from '@angular/forms';
+import {MatCardModule} from '@angular/material/card';
+import {MatInputModule} from '@angular/material/input';
+import { MaterialFileInputModule } from 'ngx-material-file-input';
+import {MatButtonModule, MatIconModule} from '@angular/material';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    BrowserAnimationsModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatInputModule,
+    MaterialFileInputModule,
+    MatButtonModule,
+    MatIconModule,
+    FormsModule,
+    HttpClientModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
